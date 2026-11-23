@@ -1,0 +1,42 @@
+name: Java Web App CI
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build-test-security:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Build and run tests
+        run: mvn -B clean verify
+      - name: OWASP Dependency Check
+        uses: dependency-check/Dependency-Check_Action@main
+        with:
+          project: Secure Student Portal
+          path: .
+          format: HTML
+          args: --failOnCVSS 7
+      - name: Upload Dependency Check report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: reports
+      - name: Upload WAR artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-war
+          path: target/secure-student-portal.war
